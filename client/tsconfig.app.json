@@ -16,6 +16,18 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* Path aliases */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@components": ["./src/components"],
+      "@components/*": ["./src/components/*"],
+      "@pages": ["./src/pages/index.ts"],
+      "@pages/*": ["./src/pages/*"],
+      "@ui": ["./src/ui"],
+      "@ui/*": ["./src/ui/*"]
+    },
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
