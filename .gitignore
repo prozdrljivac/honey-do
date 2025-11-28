@@ -1,2 +1,10 @@
 # Claude
 .claude/learnings
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+*.tfplan
+.terraform/
+terraform.tfvars
+.terraform.lock.hcl

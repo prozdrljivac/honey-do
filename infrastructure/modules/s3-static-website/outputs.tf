@@ -1,11 +1,11 @@
 output "website_endpoint" {
   description = "S3 website endpoint"
-  value       = aws_s3_bucket_website_configuration.website.website_endpoint
+  value       = aws_s3_bucket_website_configuration.website_config.website_endpoint
 }
 
 output "website_url" {
   description = "Full HTTP URL to access the website"
-  value       = "http://${aws_s3_bucket_website_configuration.website.website_endpoint}"
+  value       = "http://${aws_s3_bucket_website_configuration.website_config.website_endpoint}"
 }
 
 output "bucket_name" {
