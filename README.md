@@ -59,11 +59,11 @@ The Terraform infrastructure configuration will be located in the `/terraform` d
 
 For detailed deployment instructions, see `terraform/README.md` (coming soon)
 
-### Backend Services (Coming Soon)
+### Backend Services
 
-AWS Lambda functions and backend services documentation will be added as the Terraform migration progresses.
+The backend consists of AWS Lambda functions written in Python that provide the API for task management and user authentication.
 
-For backend setup instructions, see `backend/README.md` (coming soon)
+For detailed setup instructions, see [backend/README.md](./backend/README.md)
 
 ## License
 
