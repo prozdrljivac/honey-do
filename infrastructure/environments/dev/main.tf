@@ -25,3 +25,32 @@ module "static_website" {
     ManagedBy   = "terraform"
   }
 }
+
+module "api" {
+  source = "../../modules/api-gateway-lambda"
+
+  environment        = var.environment
+  api_name           = var.api_name
+  lambda_name        = var.lambda_name
+  lambda_handler     = "list.list"
+  lambda_runtime     = "python3.13"
+  backend_source_dir = "${path.root}/../../../backend/src/tasks"
+
+  routes = [
+    {
+      path        = "tasks"
+      http_method = "GET"
+    },
+    # To add POST endpoint tomorrow, just uncomment:
+    # {
+    #   path        = "tasks"
+    #   http_method = "POST"
+    # },
+  ]
+
+  tags = {
+    Environment = var.environment
+    Project     = "honey-do"
+    ManagedBy   = "terraform"
+  }
+}
