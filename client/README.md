@@ -1,73 +1,175 @@
-# React + TypeScript + Vite
+# Client - Honey-Do Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend application for the Honey-Do task management system, built with React and TypeScript.
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+The client is a modern single-page application (SPA) built using React 19, TypeScript, and Vite. It provides the user interface for task management, authentication, and other core functionality of the Honey-Do application.
 
-## React Compiler
+## Prerequisites
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Before setting up the frontend, ensure you have the following installed:
 
-## Expanding the ESLint configuration
+- **Node.js 18+**: JavaScript runtime
+- **pnpm**: Fast, disk space efficient package manager ([installation guide](https://pnpm.io/installation))
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Setup
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+1. **Navigate to the client directory**:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+   ```bash
+   cd client
+   ```
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+2. **Install dependencies**:
+
+   ```bash
+   pnpm install
+   ```
+
+   This will install all required dependencies from `package.json`.
+
+## Development
+
+### Running the Development Server
+
+To start the development server with hot module replacement:
+
+```bash
+pnpm dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The application will be available at `http://localhost:5173` (default Vite port).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Building for Production
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+To build the application for production:
+
+```bash
+pnpm build
 ```
+
+This command:
+
+1. Runs TypeScript compiler (`tsc -b`) to check for type errors
+2. Builds optimized production bundle with Vite
+3. Outputs files to the `dist/` directory
+
+### Preview Production Build
+
+To preview the production build locally:
+
+```bash
+pnpm preview
+```
+
+### Code Quality
+
+This project uses ESLint and Prettier for code quality and formatting.
+
+**Check for linting issues**:
+
+```bash
+pnpm lint
+```
+
+**Format code with Prettier**:
+
+```bash
+pnpm exec prettier --write .
+```
+
+## Project Structure
+
+```markdown
+client/
+├── src/
+│   ├── pages/              # Route pages (Home, SignIn, SignUp)
+│   ├── components/         # React components
+│   ├── assets/            # Static assets (images, styles)
+│   ├── App.tsx            # Main app component with routing
+│   └── main.tsx           # Application entry point
+├── dist/                  # Built files (generated)
+├── public/                # Public static assets
+├── package.json           # Dependencies and scripts
+├── tsconfig.app.json      # TypeScript configuration
+├── vite.config.ts         # Vite configuration
+├── eslint.config.js       # ESLint configuration
+└── README.md              # This file
+```
+
+## Technology Stack
+
+- **React 19.2.0** - UI framework
+- **TypeScript 5.9.3** - Type safety and better DX
+- **Vite 7.2.4** - Build tool and dev server
+- **React Router 7.9.6** - Client-side routing
+- **Tailwind CSS 4.1.17** - Utility-first CSS framework
+- **ESLint & Prettier** - Code quality and formatting
+
+## Current Pages
+
+- **Home** (`/`) - Landing page
+- **Sign In** (`/sign-in`) - User login (UI only, auth pending)
+- **Sign Up** (`/sign-up`) - User registration (UI only, auth pending)
+
+## Environment Variables
+
+Environment variables can be configured using `.env` files. Vite exposes variables prefixed with `VITE_`:
+
+```bash
+# .env.local
+VITE_API_URL=https://your-api-gateway-url.amazonaws.com
+```
+
+Access in code:
+
+```typescript
+const apiUrl = import.meta.env.VITE_API_URL
+```
+
+## Deployment
+
+The frontend is deployed as a static website on AWS S3. The infrastructure is managed by Terraform.
+
+To deploy:
+
+1. Build the production bundle:
+
+   ```bash
+   pnpm build
+   ```
+
+2. Deploy using Terraform (from the `/infrastructure` directory):
+
+   ```bash
+   cd ../infrastructure/environments/dev
+   terraform apply
+   ```
+
+See [infrastructure/README.md](../infrastructure/README.md) for detailed deployment instructions.
+
+## Adding Dependencies
+
+To add a new dependency:
+
+```bash
+pnpm add <package-name>
+```
+
+To add a development dependency:
+
+```bash
+pnpm add -D <package-name>
+```
+
+## Path Aliases
+
+The project uses TypeScript path aliases for cleaner imports:
+
+```typescript
+import { Component } from '@/components/Component'
+import { helper } from '@/utils/helper'
+```
+
+Configuration is in `tsconfig.app.json` and `vite.config.ts`.
