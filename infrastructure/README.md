@@ -6,6 +6,8 @@ Terraform infrastructure as code for deploying the Honey-Do application on AWS.
 
 The infrastructure is built using Terraform with a modular design, allowing for reusable components and multi-environment deployments. The setup provisions all necessary AWS resources including S3 for static hosting, API Gateway for REST endpoints, and Lambda functions for backend logic.
 
+**Key Architecture**: The API Gateway module supports a **per-route Lambda architecture**, allowing you to define independent Lambda functions for each API endpoint with separate configurations, handlers, and source directories.
+
 ## Prerequisites
 
 Before setting up the infrastructure, ensure you have the following installed:
@@ -102,16 +104,20 @@ module "static_website" {
 
 ### api-gateway-lambda
 
-Creates a REST API using API Gateway with Lambda function integration.
+Creates a REST API using API Gateway with per-route Lambda function integration.
 
 **Features:**
 
-- REST API with configurable routes and methods
-- Lambda function deployment from source code
-- Automatic deployment triggers on code changes
-- CloudWatch logging integration
-- CORS support
-- IAM roles and permissions
+- REST API with configurable routes and HTTP methods (GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD)
+- **Per-route Lambda functions** - Each endpoint can have its own independent Lambda configuration
+- Independent Lambda handlers, runtimes, and source directories per route
+- Support for nested route paths (e.g., `tasks/{id}/comments`) with automatic hierarchy building
+- Path validation (no root paths, no leading/trailing slashes, parent paths must be explicit)
+- Automatic API deployment triggers on resource changes
+- CloudWatch logging integration (7-day retention) with per-Lambda log groups
+- CORS-ready architecture
+- IAM roles and permissions automatically managed per Lambda
+- Output maps for easy access to Lambda details by route
 
 **Usage:**
 
@@ -119,21 +125,26 @@ Creates a REST API using API Gateway with Lambda function integration.
 module "api" {
   source = "../../modules/api-gateway-lambda"
 
-  environment        = var.environment
-  api_name           = var.api_name
-  lambda_name        = var.lambda_name
-  lambda_handler     = "handler.handler"
-  lambda_runtime     = "python3.13"
-  backend_source_dir = "${path.root}/../../../backend/src/tasks"
+  environment = var.environment
+  api_name    = "honey-do-api"
 
   routes = [
     {
-      path        = "tasks"
-      http_method = "GET"
+      path               = "tasks"
+      http_method        = "GET"
+      lambda_name        = "honey-do-api-list-tasks"
+      lambda_handler     = "list_tasks.handler"
+      lambda_runtime     = "python3.13"
+      backend_source_dir = "${path.root}/../../../backend/src/tasks"
     },
+    # Example: Adding a POST endpoint
     {
-      path        = "tasks"
-      http_method = "POST"
+      path               = "tasks"
+      http_method        = "POST"
+      lambda_name        = "honey-do-api-create-task"
+      lambda_handler     = "create_task.handler"
+      lambda_runtime     = "python3.13"
+      backend_source_dir = "${path.root}/../../../backend/src/tasks"
     },
   ]
 
@@ -143,8 +154,42 @@ module "api" {
     ManagedBy   = "terraform"
   }
 }
-
 ```
+
+**Route Keys**: Each route is identified by a key in the format `path-method` (e.g., `tasks-GET`, `tasks-POST`). This key is used to access Lambda function details in the module outputs.
+
+### Route Configuration
+
+Each route object supports the following fields:
+
+| Field | Required | Description | Validation |
+|-------|----------|-------------|------------|
+| `path` | Yes | API resource path (e.g., `tasks`, `users/{id}`) | Alphanumeric, slashes, hyphens, underscores, curly braces only. No leading/trailing slashes. |
+| `http_method` | Yes | HTTP method | Must be one of: GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD |
+| `lambda_name` | Yes | Name for the Lambda function | String |
+| `lambda_handler` | Yes | Handler path (e.g., `list_tasks.handler`) | String |
+| `lambda_runtime` | Yes | Python runtime version | Must be between python3.9 and python3.13 |
+| `backend_source_dir` | Yes | Path to Lambda source code directory | String |
+| `authorization` | No | Authorization type (default: "NONE") | String |
+
+**Nested Routes Example:**
+
+For nested paths like `tasks/{id}/comments`, you must explicitly define all parent paths:
+
+```hcl
+routes = [
+  { path = "tasks", http_method = "GET", ... },
+  { path = "tasks/{id}", http_method = "GET", ... },
+  { path = "tasks/{id}/comments", http_method = "GET", ... },
+]
+```
+
+**Path Validation Rules:**
+
+- No root path (`/`) routes are supported - all routes must be under a resource path
+- No leading or trailing slashes in paths
+- Parent path segments must be explicitly defined for nested routes
+- Supports path parameters using curly braces (e.g., `{id}`, `{userId}`)
 
 ## Deployment
 
@@ -320,7 +365,23 @@ bucket_name = "honey-do-prod-static-website"
 
 After deployment, Terraform provides important URLs and identifiers:
 
-- `website_url` - S3 static website endpoint
-- `website_bucket_name` - S3 bucket name
-- `api_endpoint` - API Gateway invoke URL
+### Static Website Outputs
+
+- `website_url` - S3 static website endpoint (full HTTP URL)
+- `website_endpoint` - S3 website endpoint
+- `bucket_name` - S3 bucket name
+
+### API Gateway Outputs
+
+- `api_endpoint` - API Gateway base invoke URL (append resource paths to construct full endpoint URLs)
 - `api_id` - API Gateway REST API ID
+- `api_resources` - Map of all created API Gateway resources (full_path → resource object)
+- `api_resource_ids` - Map of resource paths to their IDs
+
+### Lambda Function Outputs
+
+The module provides map-based outputs for Lambda functions, keyed by route (format: `path-method`):
+
+- `lambda_function_names` - Map of route keys to Lambda function names
+- `lambda_function_arns` - Map of route keys to Lambda function ARNs
+- `lambda_functions` - Map of route keys to complete Lambda details (function_name, arn, invoke_arn, role_arn, log_group)

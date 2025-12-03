@@ -28,12 +28,12 @@ output "api_id" {
   value       = module.api.api_id
 }
 
-output "lambda_function_name" {
-  description = "Lambda function name"
-  value       = module.api.lambda_function_name
+output "lambda_function_names" {
+  description = "Map of Lambda function names by route (key format: path-method)"
+  value       = module.api.lambda_function_names
 }
 
-output "cloudwatch_log_group" {
-  description = "CloudWatch log group name"
-  value       = module.api.cloudwatch_log_group
+output "lambda_functions" {
+  description = "Map of all Lambda function details by route (includes ARN, role, log group)"
+  value       = module.api.lambda_functions
 }
