@@ -1,5 +1,7 @@
 resource "aws_iam_role" "lambda" {
-  name = "${var.lambda_name}-role"
+  for_each = local.routes_map
+
+  name = "${each.value.lambda_name}-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -17,43 +19,51 @@ resource "aws_iam_role" "lambda" {
   tags = merge(
     var.tags,
     {
-      Name = "${var.lambda_name}-role"
+      Name = "${each.value.lambda_name}-role"
     }
   )
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_basic" {
-  role       = aws_iam_role.lambda.name
+  for_each = local.routes_map
+
+  role       = aws_iam_role.lambda[each.key].name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 resource "aws_cloudwatch_log_group" "lambda" {
-  name              = "/aws/lambda/${var.lambda_name}"
+  for_each = local.routes_map
+
+  name              = "/aws/lambda/${each.value.lambda_name}"
   retention_in_days = 7
 
   tags = merge(
     var.tags,
     {
-      Name = "${var.lambda_name}-logs"
+      Name = "${each.value.lambda_name}-logs"
     }
   )
 }
 
 data "archive_file" "lambda" {
+  for_each = local.routes_map
+
   type        = "zip"
-  source_dir  = var.backend_source_dir
-  output_path = "${path.module}/.terraform/lambda_${var.lambda_name}.zip"
+  source_dir  = each.value.backend_source_dir
+  output_path = "${path.module}/.terraform/lambda_${each.value.lambda_name}.zip"
 }
 
 resource "aws_lambda_function" "api" {
-  filename         = data.archive_file.lambda.output_path
-  function_name    = var.lambda_name
-  role             = aws_iam_role.lambda.arn
-  handler          = var.lambda_handler
-  runtime          = var.lambda_runtime
+  for_each = local.routes_map
+
+  filename         = data.archive_file.lambda[each.key].output_path
+  function_name    = each.value.lambda_name
+  role             = aws_iam_role.lambda[each.key].arn
+  handler          = each.value.lambda_handler
+  runtime          = each.value.lambda_runtime
   memory_size      = var.lambda_memory
   timeout          = var.lambda_timeout
-  source_code_hash = data.archive_file.lambda.output_base64sha256
+  source_code_hash = data.archive_file.lambda[each.key].output_base64sha256
 
   environment {
     variables = {
@@ -69,7 +79,7 @@ resource "aws_lambda_function" "api" {
   tags = merge(
     var.tags,
     {
-      Name = var.lambda_name
+      Name = each.value.lambda_name
     }
   )
 }

@@ -26,22 +26,20 @@ module "static_website" {
   }
 }
 
-# TODO: This needs to be adjusted so integrations point to correct lambda function and handler
 module "api" {
   source = "../../modules/api-gateway-lambda"
 
   environment = var.environment
   api_name    = var.api_name
-  lambda_name = var.lambda_name
-  # This is now broken since we changed the name of lambda and handler function
-  lambda_handler     = "list.list"
-  lambda_runtime     = "python3.13"
-  backend_source_dir = "${path.root}/../../../backend/src/tasks"
 
   routes = [
     {
-      path        = "tasks"
-      http_method = "GET"
+      path               = "tasks"
+      http_method        = "GET"
+      lambda_name        = "${var.api_name}-list-tasks"
+      lambda_handler     = "list_tasks.handler"
+      lambda_runtime     = "python3.13"
+      backend_source_dir = "${path.root}/../../../backend/src/tasks"
     },
     # To add POST endpoint tomorrow, just uncomment:
     # {

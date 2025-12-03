@@ -13,28 +13,6 @@ variable "api_name" {
   type        = string
 }
 
-variable "lambda_name" {
-  description = "Name of the Lambda function to be integrated with API Gateway"
-  type        = string
-}
-
-variable "lambda_handler" {
-  description = "Lambda handler in format: filename.function_name"
-  type        = string
-  default     = "handler.handler"
-}
-
-variable "lambda_runtime" {
-  description = "Lambda runtime"
-  type        = string
-  default     = "python3.13"
-
-  validation {
-    condition     = can(regex("^python3\\.(9|10|11|12|13)$", var.lambda_runtime))
-    error_message = "Lambda runtime must be python3.9, python3.10, python3.11, python3.12, python3.13"
-  }
-}
-
 variable "lambda_memory" {
   description = "Lambda memory in MB (also affects CPU)"
   type        = number
@@ -57,17 +35,16 @@ variable "lambda_timeout" {
   }
 }
 
-variable "backend_source_dir" {
-  description = "Path to the backend source directory (e.g., backend/src/hello)"
-  type        = string
-}
-
 variable "routes" {
   description = "List of API routes with their HTTP methods"
   type = list(object({
-    path          = string
-    http_method   = string
-    authorization = optional(string, "NONE")
+    path               = string
+    http_method        = string
+    lambda_name        = string
+    lambda_handler     = string
+    lambda_runtime     = string
+    backend_source_dir = string
+    authorization      = optional(string, "NONE")
   }))
 
   validation {

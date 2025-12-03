@@ -21,22 +21,32 @@ output "api_resource_ids" {
   }
 }
 
-output "lambda_function_name" {
-  description = "Name of the Lambda function"
-  value       = aws_lambda_function.api.function_name
+output "lambda_functions" {
+  description = "Map of Lambda functions by route key (path-method format, e.g., 'tasks-GET'). Each entry contains function details."
+  value = {
+    for key, lambda in aws_lambda_function.api :
+    key => {
+      function_name = lambda.function_name
+      arn          = lambda.arn
+      invoke_arn   = lambda.invoke_arn
+      role_arn     = aws_iam_role.lambda[key].arn
+      log_group    = aws_cloudwatch_log_group.lambda[key].name
+    }
+  }
 }
 
-output "lambda_function_arn" {
-  description = "ARN of the Lambda function"
-  value       = aws_lambda_function.api.arn
+output "lambda_function_names" {
+  description = "Map of route keys to Lambda function names"
+  value = {
+    for key, lambda in aws_lambda_function.api :
+    key => lambda.function_name
+  }
 }
 
-output "lambda_role_arn" {
-  description = "ARN of the Lambda execution role"
-  value       = aws_iam_role.lambda.arn
-}
-
-output "cloudwatch_log_group" {
-  description = "Name of the CloudWatch log group"
-  value       = aws_cloudwatch_log_group.lambda.name
+output "lambda_function_arns" {
+  description = "Map of route keys to Lambda function ARNs"
+  value = {
+    for key, lambda in aws_lambda_function.api :
+    key => lambda.arn
+  }
 }

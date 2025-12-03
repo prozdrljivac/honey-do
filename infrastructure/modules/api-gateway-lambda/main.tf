@@ -61,7 +61,7 @@ resource "aws_api_gateway_integration" "integrations" {
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.api.invoke_arn
+  uri                     = aws_lambda_function.api[each.key].invoke_arn
 }
 
 resource "aws_api_gateway_deployment" "api" {
@@ -99,9 +99,11 @@ resource "aws_api_gateway_stage" "api" {
 }
 
 resource "aws_lambda_permission" "api_gateway" {
+  for_each = local.routes_map
+
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.api.function_name
+  function_name = aws_lambda_function.api[each.key].function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
 }
