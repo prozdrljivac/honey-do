@@ -41,11 +41,14 @@ module "api" {
       lambda_runtime     = "python3.13"
       backend_source_dir = "${path.root}/../../../backend/src/tasks"
     },
-    # To add POST endpoint tomorrow, just uncomment:
-    # {
-    #   path        = "tasks"
-    #   http_method = "POST"
-    # },
+    {
+      path               = "tasks"
+      http_method        = "POST"
+      lambda_name        = "${var.api_name}-create-task"
+      lambda_handler     = "create_task.handler"
+      lambda_runtime     = "python3.13"
+      backend_source_dir = "${path.root}/../../../backend/src/tasks"
+    },
   ]
 
   tags = {

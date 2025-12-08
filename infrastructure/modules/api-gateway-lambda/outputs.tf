@@ -10,13 +10,13 @@ output "api_endpoint" {
 
 output "api_resources" {
   description = "Map of created API Gateway resources (full_path -> resource object). For nested routes, includes all explicitly defined resources."
-  value       = aws_api_gateway_resource.resources
+  value       = local.all_resources
 }
 
 output "api_resource_ids" {
   description = "Map of resource paths to their IDs for easy reference"
   value = {
-    for path, resource in aws_api_gateway_resource.resources :
+    for path, resource in local.all_resources :
     path => resource.id
   }
 }
