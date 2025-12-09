@@ -49,6 +49,14 @@ module "api" {
       lambda_runtime     = "python3.13"
       backend_source_dir = "${path.root}/../../../backend/src/tasks"
     },
+    {
+      path               = "tasks/{id}"
+      http_method        = "DELETE"
+      lambda_name        = "${var.api_name}-delete-task"
+      lambda_handler     = "delete_task.handler"
+      lambda_runtime     = "python3.13"
+      backend_source_dir = "${path.root}/../../../backend/src/tasks"
+    }
   ]
 
   tags = {
