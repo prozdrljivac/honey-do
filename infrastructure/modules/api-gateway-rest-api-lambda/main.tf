@@ -69,3 +69,14 @@ resource "aws_iam_role" "role" {
   name               = "task-lambda-execution"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
+
+# Stage
+resource "aws_api_gateway_deployment" "deployment" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+}
+
+resource "aws_api_gateway_stage" "stage" {
+  deployment_id = aws_api_gateway_deployment.deployment.id
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  stage_name = "${var.environment}"
+}
