@@ -1,9 +1,9 @@
 variable "app_name" {
-	description = "Application name"
-	type = string
+  description = "Application name"
+  type        = string
 }
 
 variable "environment" {
-	description = "Environment name"
-	type = string
+  description = "Environment name"
+  type        = string
 }

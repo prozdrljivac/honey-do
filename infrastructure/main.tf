@@ -5,6 +5,6 @@ provider "aws" {
 module "honey_do_api" {
   source = "./modules/api-gateway-rest-api-lambda"
 
-  app_name = "${var.app_name}"
-  environment = "${var.environment}"
+  app_name    = var.app_name
+  environment = var.environment
 }
