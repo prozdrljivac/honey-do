@@ -1,3 +1,4 @@
 # Tasks
 
-- Lambda should only take care of it's task, API Gateway should take care of API related things
+- Write lambda in code and connect it to the current API Gateway
+- Make the module support multiple definitions of the resources and its methods
