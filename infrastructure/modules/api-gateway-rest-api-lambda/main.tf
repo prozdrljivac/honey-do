@@ -57,14 +57,31 @@ resource "aws_lambda_permission" "apigw_lambda" {
   source_arn = "arn:${data.aws_partition.current.partition}:execute-api:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.api.id}/*/${aws_api_gateway_method.method.http_method}${aws_api_gateway_resource.resource.path}"
 }
 
-resource "aws_lambda_function" "lambda" {
-  filename      = "lambda.zip"
-  function_name = "mylambda"
-  role          = aws_iam_role.role.arn
-  handler       = "lambda.lambda_handler"
-  runtime       = "python3.12"
+resource "terraform_data" "build_lambda" {
+  triggers_replace = {
+    source_code = filemd5("../backend/list-tasks/main.go")
+  }
 
-  source_code_hash = filebase64sha256("lambda.zip")
+  provisioner "local-exec" {
+    command = "cd ../backend && make build-lambda path=list-tasks"
+  }
+}
+
+resource "aws_lambda_function" "lambda" {
+  filename      = "${path.root}/../backend/list-tasks/lambda.zip"
+  function_name = "list-tasks"
+  role          = aws_iam_role.role.arn
+  handler       = "bootstrap"
+  runtime       = "provided.al2023"
+  source_code_hash = fileexists("${path.root}/../backend/list-tasks/lambda.zip") ? filebase64sha256("${path.root}/../backend/list-tasks/lambda.zip") : null
+
+  depends_on = [
+    terraform_data.build_lambda
+  ]
+
+  lifecycle {
+    replace_triggered_by = [terraform_data.build_lambda]
+  }
 }
 
 # IAM
