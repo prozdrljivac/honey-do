@@ -7,3 +7,13 @@ variable "environment" {
 	description = "Environment name"
 	type = string
 }
+
+variable "routes" {
+  description = "Defines routes for our API"
+  type = list(object({
+    path = string
+    method = string
+    lambda = string
+    status_code = string
+  }))
+}
