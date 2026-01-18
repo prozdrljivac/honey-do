@@ -1,3 +1,10 @@
+locals {
+  routes = {
+    for route in var.routes :
+    "${route.method}-${route.name}" => route
+  }
+} 
+
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 data "aws_partition" "current" {}
@@ -9,78 +16,94 @@ resource "aws_api_gateway_rest_api" "api" {
 }
 
 resource "aws_api_gateway_resource" "resource" {
-  path_part   = "tasks"
+  for_each = local.routes
+
+  path_part   = each.value.path
   parent_id   = aws_api_gateway_rest_api.api.root_resource_id
   rest_api_id = aws_api_gateway_rest_api.api.id
 }
 
 resource "aws_api_gateway_method" "method" {
+  for_each = local.routes
+
   rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.resource.id
-  http_method   = "GET"
+  resource_id   = aws_api_gateway_resource.resource[each.key].id
+  http_method   = each.value.method
   authorization = "NONE"
 }
 
 resource "aws_api_gateway_integration" "integration" {
+  for_each = local.routes
+
   rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.resource.id
-  http_method             = aws_api_gateway_method.method.http_method
+  resource_id             = aws_api_gateway_resource.resource[each.key].id
+  http_method             = aws_api_gateway_method.method[each.key].http_method
   integration_http_method = "POST"
   type                    = "AWS"
-  uri                     = aws_lambda_function.lambda.invoke_arn
+  uri                     = aws_lambda_function.lambda[each.key].invoke_arn
 }
 
 resource "aws_api_gateway_method_response" "response_200" {
+  for_each = local.routes
+
   rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.resource.id
-  http_method             = aws_api_gateway_method.method.http_method
-  status_code = "200"
+  resource_id             = aws_api_gateway_resource.resource[each.key].id
+  http_method             = aws_api_gateway_method.method[each.key].http_method
+  status_code = each.value.status_code
 }
 
 resource "aws_api_gateway_integration_response" "integration_response" {
+  for_each = local.routes
+
   rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.resource.id
-  http_method             = aws_api_gateway_method.method.http_method
-  status_code = aws_api_gateway_method_response.response_200.status_code
+  resource_id             = aws_api_gateway_resource.resource[each.key].id
+  http_method             = aws_api_gateway_method.method[each.key].http_method
+  status_code = aws_api_gateway_method_response.response_200[each.key].status_code
 
   depends_on = [aws_api_gateway_integration.integration]
 }
 
 # Lambda
 resource "aws_lambda_permission" "apigw_lambda" {
+  for_each = local.routes
+
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.lambda.function_name
+  function_name = aws_lambda_function.lambda[each.key].function_name
   principal     = "apigateway.amazonaws.com"
 
   # More: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-control-access-using-iam-policies-to-invoke-api.html
-  source_arn = "arn:${data.aws_partition.current.partition}:execute-api:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.api.id}/*/${aws_api_gateway_method.method.http_method}${aws_api_gateway_resource.resource.path}"
+  source_arn = "arn:${data.aws_partition.current.partition}:execute-api:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.api.id}/*/${aws_api_gateway_method.method[each.key].http_method}${aws_api_gateway_resource.resource[each.key].path}"
 }
 
 resource "terraform_data" "build_lambda" {
+  for_each = local.routes
+
   triggers_replace = {
-    source_code = filemd5("../backend/list-tasks/main.go")
+    source_code = filemd5("../backend/${each.value.lambda}/main.go")
   }
 
   provisioner "local-exec" {
-    command = "cd ../backend && make build-lambda path=list-tasks"
+    command = "cd ../backend && make build-lambda path=${each.value.lambda}"
   }
 }
 
 resource "aws_lambda_function" "lambda" {
-  filename      = "${path.root}/../backend/list-tasks/lambda.zip"
-  function_name = "list-tasks"
+  for_each = local.routes
+
+  filename      = "${path.root}/../backend/${each.value.lambda}/lambda.zip"
+  function_name = "${each.value.lambda}"
   role          = aws_iam_role.role.arn
   handler       = "bootstrap"
   runtime       = "provided.al2023"
-  source_code_hash = fileexists("${path.root}/../backend/list-tasks/lambda.zip") ? filebase64sha256("${path.root}/../backend/list-tasks/lambda.zip") : null
+  source_code_hash = fileexists("${path.root}/../backend/${each.value.lambda}/lambda.zip") ? filebase64sha256("${path.root}/../backend/${each.value.lambda}/lambda.zip") : null
 
   depends_on = [
     terraform_data.build_lambda
   ]
 
   lifecycle {
-    replace_triggered_by = [terraform_data.build_lambda]
+    replace_triggered_by = [terraform_data.build_lambda[each.key]]
   }
 }
 

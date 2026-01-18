@@ -11,6 +11,7 @@ variable "environment" {
 variable "routes" {
   description = "Defines routes for our API"
   type = list(object({
+    name = string
     path = string
     method = string
     lambda = string
