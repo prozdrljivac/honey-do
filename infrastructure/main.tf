@@ -14,6 +14,13 @@ module "honey_do_api" {
       method      = "GET"
       lambda      = "list-tasks"
       status_code = "200"
+    },
+    {
+      name        = "create-task"
+      path        = "tasks"
+      method      = "POST"
+      lambda      = "create-task"
+      status_code = "201"
     }
   ]
 }

@@ -1,4 +1,6 @@
 locals {
+  unique_paths = toset([for route in var.routes : route.path])
+
   routes = {
     for route in var.routes :
     "${route.method}-${route.name}" => route
@@ -16,9 +18,9 @@ resource "aws_api_gateway_rest_api" "api" {
 }
 
 resource "aws_api_gateway_resource" "resource" {
-  for_each = local.routes
+  for_each = local.unique_paths
 
-  path_part   = each.value.path
+  path_part   = each.value
   parent_id   = aws_api_gateway_rest_api.api.root_resource_id
   rest_api_id = aws_api_gateway_rest_api.api.id
 }
@@ -27,7 +29,7 @@ resource "aws_api_gateway_method" "method" {
   for_each = local.routes
 
   rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.resource[each.key].id
+  resource_id   = aws_api_gateway_resource.resource[each.value.path].id
   http_method   = each.value.method
   authorization = "NONE"
 }
@@ -36,7 +38,7 @@ resource "aws_api_gateway_integration" "integration" {
   for_each = local.routes
 
   rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.resource[each.key].id
+  resource_id             = aws_api_gateway_resource.resource[each.value.path].id
   http_method             = aws_api_gateway_method.method[each.key].http_method
   integration_http_method = "POST"
   type                    = "AWS"
@@ -47,7 +49,7 @@ resource "aws_api_gateway_method_response" "response_200" {
   for_each = local.routes
 
   rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.resource[each.key].id
+  resource_id             = aws_api_gateway_resource.resource[each.value.path].id
   http_method             = aws_api_gateway_method.method[each.key].http_method
   status_code = each.value.status_code
 }
@@ -56,7 +58,7 @@ resource "aws_api_gateway_integration_response" "integration_response" {
   for_each = local.routes
 
   rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.resource[each.key].id
+  resource_id             = aws_api_gateway_resource.resource[each.value.path].id
   http_method             = aws_api_gateway_method.method[each.key].http_method
   status_code = aws_api_gateway_method_response.response_200[each.key].status_code
 
@@ -73,7 +75,7 @@ resource "aws_lambda_permission" "apigw_lambda" {
   principal     = "apigateway.amazonaws.com"
 
   # More: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-control-access-using-iam-policies-to-invoke-api.html
-  source_arn = "arn:${data.aws_partition.current.partition}:execute-api:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.api.id}/*/${aws_api_gateway_method.method[each.key].http_method}${aws_api_gateway_resource.resource[each.key].path}"
+  source_arn = "arn:${data.aws_partition.current.partition}:execute-api:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.api.id}/*/${aws_api_gateway_method.method[each.key].http_method}${aws_api_gateway_resource.resource[each.value.path].path_part}"
 }
 
 resource "terraform_data" "build_lambda" {
