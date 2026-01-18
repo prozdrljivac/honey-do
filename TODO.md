@@ -1,3 +1,5 @@
 # Tasks
 
-- Make the module support multiple definitions of the resources and its methods
+- Fix the issue where apply fails on first attempt
+- See why routes are returning 500 server errors when created
+
