@@ -1,5 +1,6 @@
 # Tasks
 
-- Fix the issue where apply fails on first attempt
-- See why routes are returning 500 server errors when created
+- Fix gateway-lambda module to support route nesting
+- Connect create-task to enter data to dynamodb
+- Connect list-tasks to get list of tasks from dynamodb
 
