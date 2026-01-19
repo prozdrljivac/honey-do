@@ -6,7 +6,7 @@ import (
 )
 
 type Response struct {
-	Body string `json: "body"`
+	Body string `json:"body"`
 }
 
 func handler(ctx context.Context) (Response, error) {
