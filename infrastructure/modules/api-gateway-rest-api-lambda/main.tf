@@ -78,18 +78,6 @@ resource "aws_lambda_permission" "apigw_lambda" {
   source_arn = "arn:${data.aws_partition.current.partition}:execute-api:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.api.id}/*/${aws_api_gateway_method.method[each.key].http_method}${aws_api_gateway_resource.resource[each.value.path].path_part}"
 }
 
-resource "terraform_data" "build_lambda" {
-  for_each = local.routes
-
-  triggers_replace = {
-    source_code = filemd5("../backend/${each.value.lambda}/main.go")
-  }
-
-  provisioner "local-exec" {
-    command = "cd ../backend && make build-lambda path=${each.value.lambda}"
-  }
-}
-
 resource "aws_lambda_function" "lambda" {
   for_each = local.routes
 
@@ -98,15 +86,7 @@ resource "aws_lambda_function" "lambda" {
   role          = aws_iam_role.role.arn
   handler       = "bootstrap"
   runtime       = "provided.al2023"
-  source_code_hash = fileexists("${path.root}/../backend/${each.value.lambda}/lambda.zip") ? filebase64sha256("${path.root}/../backend/${each.value.lambda}/lambda.zip") : null
-
-  depends_on = [
-    terraform_data.build_lambda
-  ]
-
-  lifecycle {
-    replace_triggered_by = [terraform_data.build_lambda[each.key]]
-  }
+  source_code_hash = filebase64sha256("${path.root}/../backend/${each.value.lambda}/lambda.zip")
 }
 
 # IAM
