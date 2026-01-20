@@ -1,6 +1,9 @@
 locals {
   unique_paths = toset([for route in var.routes : route.path])
 
+  # Look at tf methods for working with strings
+  # split, length, slice, join
+  # And one for working with objects called merge
   routes = {
     for route in var.routes :
     "${route.method}-${route.name}" => route
