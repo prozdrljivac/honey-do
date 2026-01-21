@@ -1,9 +1,11 @@
 locals {
-  unique_paths = toset([for route in var.routes : route.path])
+  # all_path_segments , look into flatten, this should for each path create segments
+  # for example "task/{id}/example => task, task/{id}, task/{id}/example
 
-  # Look at tf methods for working with strings
-  # split, length, slice, join
-  # And one for working with objects called merge
+  # unique_path_segments, this should remove duplicates from all_path_segments
+
+  # path_metadata using unique path segments construct path and parent path
+
   routes = {
     for route in var.routes :
     "${route.method}-${route.name}" => route
@@ -23,7 +25,7 @@ resource "aws_api_gateway_rest_api" "api" {
 resource "aws_api_gateway_resource" "resource" {
   for_each = local.unique_paths
 
-  path_part   = each.value
+  path_part   = each.value.path
   parent_id   = aws_api_gateway_rest_api.api.root_resource_id
   rest_api_id = aws_api_gateway_rest_api.api.id
 }
