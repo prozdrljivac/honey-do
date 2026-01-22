@@ -1,10 +1,19 @@
 locals {
-  # all_path_segments , look into flatten, this should for each path create segments
-  # for example "task/{id}/example => task, task/{id}, task/{id}/example
+  all_path_segments = flatten([
+    for route in var.routes : [
+      for i in range(1, length(split("/", route.path)) + 1) :
+        join("/", slice(split("/", route.path), 0, i))
+    ]
+  ])
 
-  # unique_path_segments, this should remove duplicates from all_path_segments
+  unique_path_segments = toset(local.all_path_segments)
 
-  # path_metadata using unique path segments construct path and parent path
+  path_metadata = {
+    for path in local.unique_path_segments : path => {
+      path_part: element(split("/", path), length(split("/", path)) - 1),
+      parent_path: length(split("/", path)) > 1 ? join("/", slice(split("/", path), 0, length(split("/", path)) - 1)) : null
+    }
+  }
 
   routes = {
     for route in var.routes :
@@ -23,10 +32,10 @@ resource "aws_api_gateway_rest_api" "api" {
 }
 
 resource "aws_api_gateway_resource" "resource" {
-  for_each = local.unique_paths
+  for_each = local.path_metadata
 
-  path_part   = each.value.path
-  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
+  path_part   = each.value.path_part
+  parent_id   = each.value.parent_path == null ? aws_api_gateway_rest_api.api.root_resource_id : aws_api_gateway_resource.resource[each.value.parent_path].id
   rest_api_id = aws_api_gateway_rest_api.api.id
 }
 
