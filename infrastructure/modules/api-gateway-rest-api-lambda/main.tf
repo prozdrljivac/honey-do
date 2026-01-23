@@ -10,11 +10,33 @@ locals {
 
   path_metadata = {
     for path in local.unique_path_segments : path => {
+      depth: length(split("/", path)),
       path_part: element(split("/", path), length(split("/", path)) - 1),
       parent_path: length(split("/", path)) > 1 ? join("/", slice(split("/", path), 0, length(split("/", path)) - 1)) : null
     }
   }
 
+  routes_depth_1 = {
+    for path, metadata in local.path_metadata : path => {
+      path_part = metadata.path_part
+      parent_path = metadata.parent_path
+    } if metadata.depth == 1
+  }
+
+  routes_depth_2 = {
+    for path, metadata in local.path_metadata : path => {
+      path_part = metadata.path_part
+      parent_path = metadata.parent_path
+    } if metadata.depth == 2
+  }
+
+  routes_depth_3 = {
+    for path, metadata in local.path_metadata : path => {
+      path_part = metadata.path_part
+      parent_path = metadata.parent_path
+    } if metadata.depth == 3
+  }
+  
   routes = {
     for route in var.routes :
     "${route.method}-${route.name}" => route
@@ -31,19 +53,43 @@ resource "aws_api_gateway_rest_api" "api" {
   description = "Daily task manager API for couples"
 }
 
-resource "aws_api_gateway_resource" "resource" {
-  for_each = local.path_metadata
+resource "aws_api_gateway_resource" "resource_l1" {
+  for_each = local.routes_depth_1 
 
   path_part   = each.value.path_part
-  parent_id   = each.value.parent_path == null ? aws_api_gateway_rest_api.api.root_resource_id : aws_api_gateway_resource.resource[each.value.parent_path].id
+  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
   rest_api_id = aws_api_gateway_rest_api.api.id
+}
+
+resource "aws_api_gateway_resource" "resource_l2" {
+  for_each = local.routes_depth_2
+
+  path_part   = each.value.path_part
+  parent_id   = aws_api_gateway_resource.resource_l1[each.value.parent_path].id
+  rest_api_id = aws_api_gateway_rest_api.api.id
+}
+
+resource "aws_api_gateway_resource" "resource_l3" {
+  for_each = local.routes_depth_3
+
+  path_part   = each.value.path_part
+  parent_id   = aws_api_gateway_resource.resource_l2[each.value.parent_path].id
+  rest_api_id = aws_api_gateway_rest_api.api.id
+}
+
+locals {
+  all_resources = merge(
+    aws_api_gateway_resource.resource_l1,
+    aws_api_gateway_resource.resource_l2,
+    aws_api_gateway_resource.resource_l3
+  )
 }
 
 resource "aws_api_gateway_method" "method" {
   for_each = local.routes
 
   rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.resource[each.value.path].id
+  resource_id   = local.all_resources[each.value.path].id
   http_method   = each.value.method
   authorization = "NONE"
 }
@@ -52,7 +98,7 @@ resource "aws_api_gateway_integration" "integration" {
   for_each = local.routes
 
   rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.resource[each.value.path].id
+  resource_id   = local.all_resources[each.value.path].id
   http_method             = aws_api_gateway_method.method[each.key].http_method
   integration_http_method = "POST"
   type                    = "AWS"
@@ -63,7 +109,7 @@ resource "aws_api_gateway_method_response" "response_200" {
   for_each = local.routes
 
   rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.resource[each.value.path].id
+  resource_id   = local.all_resources[each.value.path].id
   http_method             = aws_api_gateway_method.method[each.key].http_method
   status_code = each.value.status_code
 }
@@ -72,7 +118,7 @@ resource "aws_api_gateway_integration_response" "integration_response" {
   for_each = local.routes
 
   rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.resource[each.value.path].id
+  resource_id   = local.all_resources[each.value.path].id
   http_method             = aws_api_gateway_method.method[each.key].http_method
   status_code = aws_api_gateway_method_response.response_200[each.key].status_code
 
