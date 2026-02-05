@@ -1,5 +1,6 @@
 # Tasks
 
+- Add a way to test lambdas locally
 - Connect create-task to enter data to dynamodb
 - Connect list-tasks to get list of tasks from dynamodb
 
