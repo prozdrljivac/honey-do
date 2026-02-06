@@ -23,7 +23,7 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (Respon
 
 	if err != nil {
 		return Response{
-			Body: `{"error": "Invalid request"}`
+			Body: `{"error": "Invalid request"}`,
 		}, nil	
 	}
 	// At this point we did check if request body is valid via API Gateway
