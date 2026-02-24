@@ -14,3 +14,15 @@ Resources:
           Properties:
             Path: /tasks
             Method: post
+  ListTasksFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../list-tasks/
+      Handler: bootstrap
+      Runtime: provided.al2023
+      Events:
+        ListAllTasks:
+          Type: Api
+          Properties:
+            Path: /tasks
+            Method: get
