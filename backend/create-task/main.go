@@ -23,12 +23,19 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (Respon
 
 	if err != nil {
 		return Response{
-			Body: `{"error": "Invalid request"}`,
+			Body: `{"error": "There was an issue with handling your request."}`,
 		}, nil	
 	}
-	// At this point we did check if request body is valid via API Gateway
-	// If there is a need, do a domain logic check
+
+	if task.Name == "" || task.Status == "" || task.CreatedBy == "" {
+		return Response{
+			Body: `{"error": "There was an issue with handling your data. Make sure name, status and createdBy are not empty."}`,
+		}, nil	
+	}
+
 	// Add the data to the DB
+	// Check how to install aws dynamo db sdk https://github.com/aws/aws-sdk-go-v2
+	
 	// Return a response
 	return Response{
 		Body: `{"message": "Create API, hello from Go!"}`,
