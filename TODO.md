@@ -1,6 +1,6 @@
 # Tasks
 
-- Moving forward, create tests for each of the lambdas you are implementing
+- Add to infra a way to spin up the instance of the dynamo db I will connect to
 - Connect create-task to enter data to dynamodb
 - Connect list-tasks to get list of tasks from dynamodb
 

@@ -3,8 +3,13 @@ package main
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+
+    "github.com/aws/aws-sdk-go-v2/aws"
+    "github.com/aws/aws-sdk-go-v2/config"
+    "github.com/aws/aws-sdk-go-v2/service/dynamodb"
 )
 
 type Response struct {
@@ -34,7 +39,7 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (Respon
 	}
 
 	// Add the data to the DB
-	// Check how to install aws dynamo db sdk https://github.com/aws/aws-sdk-go-v2
+	// I have installed necessary packages but need to figure out how to set up a DB because currently I don't have anything set up
 	
 	// Return a response
 	return Response{
