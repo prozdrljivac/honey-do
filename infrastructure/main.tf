@@ -31,3 +31,9 @@ module "honey_do_api" {
     }
   ]
 }
+
+module "honey_do_db" {
+  source      = "./modules/dynamodb"
+  app_name    = var.app_name
+  environment = var.environment
+}
