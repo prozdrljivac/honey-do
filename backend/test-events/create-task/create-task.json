@@ -1,5 +1,5 @@
 {
-  "body": "{\"name\": \"Buy groceries\", \"status\": \"pending\", \"createdBy\": \"12345abc\"}",
-  "httpMethod": "POST",
-  "path": "/tasks"
+  "name": "Buy groceries",
+  "status": "pending",
+  "createdBy": "12345abc"
 }
