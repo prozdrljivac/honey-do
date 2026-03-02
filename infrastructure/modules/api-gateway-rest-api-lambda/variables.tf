@@ -8,6 +8,11 @@ variable "environment" {
 	type = string
 }
 
+variable "dynamodb_table_arn" {
+  description = "Identifier for the Dynamo table lambdas use"
+  type = string
+}
+
 variable "routes" {
   description = "Defines routes for our API"
   type = list(object({
@@ -18,3 +23,4 @@ variable "routes" {
     status_code = string
   }))
 }
+

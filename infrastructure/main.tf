@@ -2,11 +2,18 @@ provider "aws" {
   region = "eu-north-1"
 }
 
+module "honey_do_db" {
+  source      = "./modules/dynamodb"
+  app_name    = var.app_name
+  environment = var.environment
+}
+
 module "honey_do_api" {
   source = "./modules/api-gateway-rest-api-lambda"
 
-  app_name    = var.app_name
-  environment = var.environment
+  app_name           = var.app_name
+  environment        = var.environment
+  dynamodb_table_arn = module.honey_do_db.table_arn
   routes = [
     {
       name        = "list-tasks"
@@ -32,8 +39,3 @@ module "honey_do_api" {
   ]
 }
 
-module "honey_do_db" {
-  source      = "./modules/dynamodb"
-  app_name    = var.app_name
-  environment = var.environment
-}
