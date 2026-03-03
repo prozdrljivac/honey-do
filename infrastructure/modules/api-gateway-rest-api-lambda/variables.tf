@@ -13,6 +13,11 @@ variable "dynamodb_table_arn" {
   type = string
 }
 
+variable "dynamodb_table_name" {
+  description = "Table name currently only used as env variable"
+  type = string
+}
+
 variable "routes" {
   description = "Defines routes for our API"
   type = list(object({

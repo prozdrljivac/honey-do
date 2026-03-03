@@ -146,6 +146,12 @@ resource "aws_lambda_function" "lambda" {
   handler       = "bootstrap"
   runtime       = "provided.al2023"
 
+  environment {
+    variables = {
+      TASK_TABLE_NAME = var.dynamodb_table_name
+    }
+  }
+
   source_code_hash = filebase64sha256("${path.root}/../backend/${each.value.lambda}/lambda.zip")
 }
 

@@ -1,4 +1,4 @@
-resource "aws_dynamodb_table" "this" {
+resource "aws_dynamodb_table" "table" {
   name         = "${var.app_name}-${var.environment}"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "PK"

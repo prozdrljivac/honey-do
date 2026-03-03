@@ -14,6 +14,7 @@ module "honey_do_api" {
   app_name           = var.app_name
   environment        = var.environment
   dynamodb_table_arn = module.honey_do_db.table_arn
+  dynamodb_table_name = module.honey_do_db.table_name
   routes = [
     {
       name        = "list-tasks"

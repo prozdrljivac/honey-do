@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"os"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -71,7 +72,7 @@ func validateRequest(req CreateTaskRequest) error {
 
 func createTask(ctx context.Context, userID, taskID string, req CreateTaskRequest) error {
 	_, err := dynamoClient.PutItem(ctx, &dynamodb.PutItemInput{
-		TableName: aws.String("honey-do-dev"), // I need to figure out how this is dynamically pulled
+		TableName: aws.String(os.Getenv("TASK_TABLE_NAME")),
 		Item: map[string]types.AttributeValue{
 			"PK":        &types.AttributeValueMemberS{Value: "USER#" + userID},
 			"SK":        &types.AttributeValueMemberS{Value: "TASK#" + taskID},
