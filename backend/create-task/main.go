@@ -71,7 +71,7 @@ func validateRequest(req CreateTaskRequest) error {
 
 func createTask(ctx context.Context, userID, taskID string, req CreateTaskRequest) error {
 	_, err := dynamoClient.PutItem(ctx, &dynamodb.PutItemInput{
-		TableName: aws.String("honey-do-dev-table"), // I need to figure out how this is dynamically pulled
+		TableName: aws.String("honey-do-dev"), // I need to figure out how this is dynamically pulled
 		Item: map[string]types.AttributeValue{
 			"PK":        &types.AttributeValueMemberS{Value: "USER#" + userID},
 			"SK":        &types.AttributeValueMemberS{Value: "TASK#" + taskID},
