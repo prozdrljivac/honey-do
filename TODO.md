@@ -1,4 +1,4 @@
 # Tasks
 
-- Connect list-tasks to get list of tasks from dynamodb
-
+- Implement Cognito for user auth and management
+- Create a testing environment
