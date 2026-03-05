@@ -18,6 +18,11 @@ variable "dynamodb_table_name" {
   type = string
 }
 
+variable "cognito_user_pool_arn" {
+  description = "Identifier of the Cognito user pool that is used for the app"
+  type = string
+}
+
 variable "routes" {
   description = "Defines routes for our API"
   type = list(object({

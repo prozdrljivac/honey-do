@@ -8,13 +8,20 @@ module "honey_do_db" {
   environment = var.environment
 }
 
+module "honey_do_auth" {
+  source      = "./modules/cognito"
+  app_name    = var.app_name
+  environment = var.environment
+}
+
 module "honey_do_api" {
   source = "./modules/api-gateway-rest-api-lambda"
 
-  app_name           = var.app_name
-  environment        = var.environment
-  dynamodb_table_arn = module.honey_do_db.table_arn
-  dynamodb_table_name = module.honey_do_db.table_name
+  app_name              = var.app_name
+  environment           = var.environment
+  dynamodb_table_arn    = module.honey_do_db.table_arn
+  dynamodb_table_name   = module.honey_do_db.table_name
+  cognito_user_pool_arn = module.honey_do_auth.user_pool_arn
   routes = [
     {
       name        = "list-tasks"

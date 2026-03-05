@@ -91,7 +91,8 @@ resource "aws_api_gateway_method" "method" {
   rest_api_id   = aws_api_gateway_rest_api.api.id
   resource_id   = local.all_resources[each.value.path].id
   http_method   = each.value.method
-  authorization = "NONE"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito.id   
 }
 
 resource "aws_api_gateway_integration" "integration" {
@@ -123,6 +124,15 @@ resource "aws_api_gateway_integration_response" "integration_response" {
   status_code = aws_api_gateway_method_response.response_200[each.key].status_code
 
   depends_on = [aws_api_gateway_integration.integration]
+}
+
+# Cognito
+resource "aws_api_gateway_authorizer" "cognito" {
+  name            = "cognito-authorizer"
+  rest_api_id     = aws_api_gateway_rest_api.api.id
+  type            = "COGNITO_USER_POOLS"
+  provider_arns   = [var.cognito_user_pool_arn]
+  identity_source = "method.request.header.Authorization"
 }
 
 # Lambda
