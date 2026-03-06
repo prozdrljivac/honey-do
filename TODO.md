@@ -1,4 +1,4 @@
 # Tasks
 
-- Implement Cognito for user auth and management
+- Make a functional list tasks api endpoint
 - Create a testing environment
