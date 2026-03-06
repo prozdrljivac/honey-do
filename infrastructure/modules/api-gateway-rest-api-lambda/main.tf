@@ -104,6 +104,16 @@ resource "aws_api_gateway_integration" "integration" {
   integration_http_method = "POST"
   type                    = "AWS"
   uri                     = aws_lambda_function.lambda[each.key].invoke_arn
+
+  request_templates = {
+    "application/json" = <<EOF
+    {
+      "body": $input.json('$'),
+      "userId": "$context.authorizer.claims.sub",
+      "email": "$context.authorizer.claims.email"
+    }
+    EOF
+  }
 }
 
 resource "aws_api_gateway_method_response" "response_200" {

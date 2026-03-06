@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 	"os"
+	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -25,10 +25,16 @@ func init() {
 	dynamoClient = dynamodb.NewFromConfig(cfg)
 }
 
-type CreateTaskRequest struct {
+type TaskBody struct {
 	Name      string `json:"name"`
 	Status    string `json:"status"`
 	CreatedBy string `json:"createdBy"`
+}
+
+type CreateTaskRequest struct {
+	Body   TaskBody `json:"body"`
+	UserId string   `json:"userId"`
+	Email  string   `json:"email"`
 }
 
 type CreateTaskResponse struct {
@@ -38,15 +44,14 @@ type CreateTaskResponse struct {
 }
 
 func handler(ctx context.Context, req CreateTaskRequest) (CreateTaskResponse, error) {
-	if err := validateRequest(req); err != nil {
+	if err := validateRequest(req.Body); err != nil {
 		return CreateTaskResponse{Error: err.Error()}, nil
 	}
 
-	// TODO: Replace with Cognito sub
-	userID := uuid.New().String()
+	userID := req.UserId
 	taskID := uuid.New().String()
 
-	if err := createTask(ctx, userID, taskID, req); err != nil {
+	if err := createTask(ctx, userID, taskID, req.Body); err != nil {
 		log.Printf("failed to create task: %v", err)
 		return CreateTaskResponse{Error: "Failed to create task"}, nil
 	}
@@ -57,7 +62,7 @@ func handler(ctx context.Context, req CreateTaskRequest) (CreateTaskResponse, er
 	}, nil
 }
 
-func validateRequest(req CreateTaskRequest) error {
+func validateRequest(req TaskBody) error {
 	if req.Name == "" {
 		return fmt.Errorf("name is required")
 	}
@@ -70,7 +75,7 @@ func validateRequest(req CreateTaskRequest) error {
 	return nil
 }
 
-func createTask(ctx context.Context, userID, taskID string, req CreateTaskRequest) error {
+func createTask(ctx context.Context, userID, taskID string, req TaskBody) error {
 	_, err := dynamoClient.PutItem(ctx, &dynamodb.PutItemInput{
 		TableName: aws.String(os.Getenv("TASK_TABLE_NAME")),
 		Item: map[string]types.AttributeValue{
