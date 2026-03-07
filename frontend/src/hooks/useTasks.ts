@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
 import { api } from '../lib/api';
-import type { CreateTaskBody } from '../types';
+import type { CreateTaskBody, Task } from '../types';
 
 export function useListTasks() {
   const { user } = useAuth();
@@ -10,6 +10,17 @@ export function useListTasks() {
     queryKey: ['tasks'],
     queryFn: () => api.listTasks(user!.idToken),
     enabled: !!user,
+  });
+}
+
+export function useTask(taskId: string, initialData?: Task) {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['tasks', taskId],
+    queryFn: () => api.getTask(taskId, user!.idToken),
+    enabled: !!user && !!taskId,
+    initialData,
   });
 }
 
