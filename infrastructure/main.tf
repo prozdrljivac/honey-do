@@ -47,3 +47,9 @@ module "honey_do_api" {
   ]
 }
 
+module "honey_do_client" {
+  source = "./modules/frontend-hosting"
+
+  app_name    = var.app_name
+  environment = var.environment
+}
