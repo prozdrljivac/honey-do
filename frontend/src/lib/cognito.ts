@@ -6,6 +6,19 @@ import {
 } from 'amazon-cognito-identity-js';
 import type { CognitoUser } from '../types';
 
+export type SignInResult =
+  | { status: 'SUCCESS'; user: CognitoUser }
+  | { status: 'NEW_PASSWORD_REQUIRED'; cognitoUser: CognitoUserLib };
+
+export class NewPasswordRequiredError extends Error {
+  cognitoUser: CognitoUserLib;
+  constructor(cognitoUser: CognitoUserLib) {
+    super('New password required');
+    this.name = 'NewPasswordRequiredError';
+    this.cognitoUser = cognitoUser;
+  }
+}
+
 let cachedPool: CognitoUserPool | null = null;
 
 function getUserPool(): CognitoUserPool | null {
@@ -27,6 +40,7 @@ function getUserPool(): CognitoUserPool | null {
 export const cognitoErrorMessages: Record<string, string> = {
   UserNotFoundException: 'No account found with this email.',
   NotAuthorizedException: 'Incorrect email or password.',
+  InvalidPasswordException: 'Password does not meet the requirements.',
   LimitExceededException: 'Too many attempts. Please try again later.',
   UserNotConfirmedException: 'Please verify your email before signing in.',
 };
@@ -49,7 +63,7 @@ function extractUser(session: CognitoUserSession): CognitoUser {
   };
 }
 
-export function signIn(email: string, password: string): Promise<CognitoUser> {
+export function signIn(email: string, password: string): Promise<SignInResult> {
   const pool = getUserPool();
   if (!pool) {
     return Promise.reject(
@@ -69,6 +83,25 @@ export function signIn(email: string, password: string): Promise<CognitoUser> {
     });
 
     cognitoUser.authenticateUser(authDetails, {
+      onSuccess: (session) => {
+        resolve({ status: 'SUCCESS', user: extractUser(session) });
+      },
+      onFailure: (err: unknown) => {
+        reject(new Error(mapCognitoError(err)));
+      },
+      newPasswordRequired: () => {
+        resolve({ status: 'NEW_PASSWORD_REQUIRED', cognitoUser });
+      },
+    });
+  });
+}
+
+export function completeNewPassword(
+  cognitoUser: CognitoUserLib,
+  newPassword: string,
+): Promise<CognitoUser> {
+  return new Promise((resolve, reject) => {
+    cognitoUser.completeNewPasswordChallenge(newPassword, {}, {
       onSuccess: (session) => {
         resolve(extractUser(session));
       },

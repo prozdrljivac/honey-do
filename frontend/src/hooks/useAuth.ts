@@ -6,5 +6,5 @@ export function useAuth() {
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-  return { ...context.state, signIn: context.signIn, signOut: context.signOut };
+  return { ...context.state, signIn: context.signIn, signOut: context.signOut, setSignedIn: context.setSignedIn };
 }

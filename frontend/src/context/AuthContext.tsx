@@ -2,11 +2,13 @@ import { createContext, useCallback, useEffect, useReducer } from 'react';
 import type { ReactNode } from 'react';
 import type { AuthState, AuthAction, CognitoUser } from '../types';
 import * as cognito from '../lib/cognito';
+import { NewPasswordRequiredError } from '../lib/cognito';
 
 interface AuthContextValue {
   state: AuthState;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => void;
+  setSignedIn: (user: CognitoUser) => void;
 }
 
 const initialState: AuthState = {
@@ -52,12 +54,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleSignIn = useCallback(async (email: string, password: string) => {
     dispatch({ type: 'LOADING' });
     try {
-      const user = await cognito.signIn(email, password);
-      dispatch({ type: 'SIGNED_IN', user, email: user.email });
+      const result = await cognito.signIn(email, password);
+      if (result.status === 'SUCCESS') {
+        dispatch({ type: 'SIGNED_IN', user: result.user, email: result.user.email });
+      } else {
+        dispatch({ type: 'SIGNED_OUT' });
+        throw new NewPasswordRequiredError(result.cognitoUser);
+      }
     } catch (err) {
+      if (err instanceof NewPasswordRequiredError) {
+        throw err;
+      }
       dispatch({ type: 'ERROR' });
       throw err;
     }
+  }, []);
+
+  const setSignedIn = useCallback((user: CognitoUser) => {
+    dispatch({ type: 'SIGNED_IN', user, email: user.email });
   }, []);
 
   const handleSignOut = useCallback(() => {
@@ -66,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext value={{ state, signIn: handleSignIn, signOut: handleSignOut }}>
+    <AuthContext value={{ state, signIn: handleSignIn, signOut: handleSignOut, setSignedIn }}>
       {children}
     </AuthContext>
   );
