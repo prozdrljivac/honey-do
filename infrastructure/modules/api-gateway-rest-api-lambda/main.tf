@@ -119,10 +119,14 @@ resource "aws_api_gateway_integration" "integration" {
 resource "aws_api_gateway_method_response" "response_200" {
   for_each = local.routes
 
-  rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id   = local.all_resources[each.value.path].id
-  http_method             = aws_api_gateway_method.method[each.key].http_method
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = local.all_resources[each.value.path].id
+  http_method = aws_api_gateway_method.method[each.key].http_method
   status_code = each.value.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin" = true
+  }
 }
 
 resource "aws_api_gateway_integration_response" "integration_response" {
@@ -133,7 +137,66 @@ resource "aws_api_gateway_integration_response" "integration_response" {
   http_method             = aws_api_gateway_method.method[each.key].http_method
   status_code = aws_api_gateway_method_response.response_200[each.key].status_code
 
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin" = "'*'"
+  }
+
   depends_on = [aws_api_gateway_integration.integration]
+}
+
+# CORS Setup
+resource "aws_api_gateway_method" "cors" {
+  for_each = local.all_resources
+
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = each.value.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "cors" {
+  for_each = local.all_resources
+
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = each.value.id
+  http_method = aws_api_gateway_method.cors[each.key].http_method
+  type        = "MOCK"
+
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_method_response" "cors" {
+  for_each = local.all_resources
+
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = each.value.id
+  http_method = aws_api_gateway_method.cors[each.key].http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "cors" {
+  for_each = local.all_resources
+
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = each.value.id
+  http_method = aws_api_gateway_method.cors[each.key].http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,POST,PUT,DELETE,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"  # Or your specific domain
+  }
+
+  depends_on = [aws_api_gateway_integration.cors]
 }
 
 # Cognito
@@ -219,8 +282,26 @@ resource "aws_iam_role_policy_attachment" "lambda_dynamodb" {
 resource "aws_api_gateway_deployment" "deployment" {
   rest_api_id = aws_api_gateway_rest_api.api.id
 
+  triggers = {
+    redeployment = sha1(jsonencode([
+      aws_api_gateway_method.method,
+      aws_api_gateway_integration.integration,
+      aws_api_gateway_integration_response.integration_response,
+      aws_api_gateway_method.cors,
+      aws_api_gateway_integration.cors,
+      aws_api_gateway_integration_response.cors,
+    ]))
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
   depends_on = [
-    aws_api_gateway_integration.integration
+    aws_api_gateway_integration.integration,
+    aws_api_gateway_integration.cors,
+    aws_api_gateway_integration_response.integration_response,
+    aws_api_gateway_integration_response.cors,
   ]
 }
 
