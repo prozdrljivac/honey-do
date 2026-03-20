@@ -50,6 +50,7 @@ module "honey_do_api" {
 module "honey_do_client" {
   source = "./modules/frontend-hosting"
 
-  app_name    = var.app_name
-  environment = var.environment
+  app_name             = var.app_name
+  environment          = var.environment
+  force_destroy_bucket = var.force_destroy_bucket
 }

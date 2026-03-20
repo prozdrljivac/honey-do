@@ -1,6 +1,8 @@
 resource "aws_s3_bucket" "client_app_assets" {
   bucket = "${var.app_name}-${var.environment}-frontend"
 
+  force_destroy = var.force_destroy_bucket
+
   tags = {
     Name        = "${var.app_name}-frontend"
     Environment = "${var.environment}"
