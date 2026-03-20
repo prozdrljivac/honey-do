@@ -14,6 +14,14 @@ module "honey_do_auth" {
   environment = var.environment
 }
 
+module "honey_do_client" {
+  source = "./modules/frontend-hosting"
+
+  app_name             = var.app_name
+  environment          = var.environment
+  force_destroy_bucket = var.force_destroy_bucket
+}
+
 module "honey_do_api" {
   source = "./modules/api-gateway-rest-api-lambda"
 
@@ -22,6 +30,8 @@ module "honey_do_api" {
   dynamodb_table_arn    = module.honey_do_db.table_arn
   dynamodb_table_name   = module.honey_do_db.table_name
   cognito_user_pool_arn = module.honey_do_auth.user_pool_arn
+  allowed_origin        = module.honey_do_client.client_url
+
   routes = [
     {
       name        = "list-tasks"
@@ -47,10 +57,3 @@ module "honey_do_api" {
   ]
 }
 
-module "honey_do_client" {
-  source = "./modules/frontend-hosting"
-
-  app_name             = var.app_name
-  environment          = var.environment
-  force_destroy_bucket = var.force_destroy_bucket
-}

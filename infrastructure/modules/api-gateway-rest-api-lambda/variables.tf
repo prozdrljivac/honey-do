@@ -23,6 +23,11 @@ variable "cognito_user_pool_arn" {
   type = string
 }
 
+variable "allowed_origin" {
+  description = "Used to identify from which origin is BE allowed to recieve requests"
+  type = string
+}
+
 variable "routes" {
   description = "Defines routes for our API"
   type = list(object({

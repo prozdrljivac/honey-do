@@ -138,7 +138,7 @@ resource "aws_api_gateway_integration_response" "integration_response" {
   status_code = aws_api_gateway_method_response.response_200[each.key].status_code
 
   response_parameters = {
-    "method.response.header.Access-Control-Allow-Origin" = "'*'"
+    "method.response.header.Access-Control-Allow-Origin" = "'${var.allowed_origin}'"
   }
 
   depends_on = [aws_api_gateway_integration.integration]
@@ -193,7 +193,7 @@ resource "aws_api_gateway_integration_response" "cors" {
   response_parameters = {
     "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
     "method.response.header.Access-Control-Allow-Methods" = "'GET,POST,PUT,DELETE,OPTIONS'"
-    "method.response.header.Access-Control-Allow-Origin"  = "'*'"  # Or your specific domain
+    "method.response.header.Access-Control-Allow-Origin"  = "'${var.allowed_origin}'"
   }
 
   depends_on = [aws_api_gateway_integration.cors]
