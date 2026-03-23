@@ -40,14 +40,18 @@ type Task struct {
 	CreatedAt string `json:"createdAt"`
 }
 
+type ListTasksRequest struct {
+	UserId string   `json:"userId"`
+	Email  string   `json:"email"`
+}
+
 type ListTasksResponse struct {
 	Tasks []Task `json:"tasks,omitempty"`
 	Error string `json:"error,omitempty"`
 }
 
-func handler(ctx context.Context) (ListTasksResponse, error) {
-	// TODO: Replace with Cognito sub from request
-	userID := "test-user"
+func handler(ctx context.Context, req ListTasksRequest) (ListTasksResponse, error) {
+	userID := req.UserId
 
 	tasks, err := getTasksForUser(ctx, userID)
 	if err != nil {
