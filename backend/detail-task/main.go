@@ -16,6 +16,7 @@ type Task struct {
 type DetailTaskRequest struct {
 	UserId string `json:userId`
 	Email string `json:email`
+	PathParams map[string]string `json:pathParams`
 }
 
 type DetailTaskResponse struct {
@@ -24,10 +25,12 @@ type DetailTaskResponse struct {
 }
 
 func handler(ctx context.Context, req DetailTaskRequest) (Response, error) {
-	userId := req.userId
-	// From the query pull taskId an get task by it, if no task return 404
+	params := req.PathParams
+	// Check if there is a task with the id provided in the param, if not return 404
+	// Is there a need of mapping from domain to dto obj?
+	// Return the response with a correct type
 	return Response{
-		Body: `{"messsage": "Hello from task details and Go!"}`,
+		Body: `{"messsage": "Hello from task details and Go with path params!"}`,
 	}, nil
 }
 

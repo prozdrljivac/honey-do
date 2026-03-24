@@ -32,6 +32,7 @@ module "honey_do_api" {
   cognito_user_pool_arn = module.honey_do_auth.user_pool_arn
   allowed_origin        = module.honey_do_client.client_url
 
+  // Routes should have defined on them request template
   routes = [
     {
       name        = "list-tasks"
