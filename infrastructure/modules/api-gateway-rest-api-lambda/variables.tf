@@ -36,6 +36,7 @@ variable "routes" {
     method = string
     lambda = string
     status_code = string
+    request_template = string
   }))
 }
 

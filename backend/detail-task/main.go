@@ -13,10 +13,18 @@ type Task struct {
 	CreatedAt string `json:"createdAt"`
 }
 
+type UserBody struct {
+	Id string `json:"id"`
+	Email string `json:"email"`
+}
+
+type PathParamsBody struct {
+	Id string `json:"id"`
+}
+
 type DetailTaskRequest struct {
-	UserId string `json:userId`
-	Email string `json:email`
-	PathParams map[string]string `json:pathParams`
+	User UserBody `json:"user"`
+	PathParams PathParamsBody `json:"pathParams"`
 }
 
 type DetailTaskResponse struct {
@@ -24,13 +32,19 @@ type DetailTaskResponse struct {
 	Error string `json:"error,omitempty"`
 }
 
-func handler(ctx context.Context, req DetailTaskRequest) (Response, error) {
-	params := req.PathParams
+func handler(ctx context.Context, req DetailTaskRequest) (DetailTaskResponse, error) {
+	// Pull id from params
 	// Check if there is a task with the id provided in the param, if not return 404
 	// Is there a need of mapping from domain to dto obj?
 	// Return the response with a correct type
-	return Response{
-		Body: `{"messsage": "Hello from task details and Go with path params!"}`,
+	return DetailTaskResponse {
+		Task: Task{
+			ID: "test",
+			Name: "test",
+			Status: "test",
+			CreatedBy: "test",
+			CreatedAt: "test",
+		},
 	}, nil
 }
 

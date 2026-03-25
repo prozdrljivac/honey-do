@@ -32,28 +32,55 @@ module "honey_do_api" {
   cognito_user_pool_arn = module.honey_do_auth.user_pool_arn
   allowed_origin        = module.honey_do_client.client_url
 
-  // Routes should have defined on them request template
   routes = [
     {
-      name        = "list-tasks"
-      path        = "tasks"
-      method      = "GET"
-      lambda      = "list-tasks"
-      status_code = "200"
+      name              = "list-tasks"
+      path              = "tasks"
+      method            = "GET"
+      lambda            = "list-tasks"
+      status_code       = "200"
+      request_template = <<EOF
+        {
+          "user": {
+            "id": "$context.authorizer.claims.sub",
+            "email": "$context.authorizer.claims.email"
+          }
+        }
+        EOF
     },
     {
-      name        = "detail-task"
-      path        = "tasks/{id}"
-      method      = "GET"
-      lambda      = "detail-task"
-      status_code = "200"
+      name              = "detail-task"
+      path              = "tasks/{id}"
+      method            = "GET"
+      lambda            = "detail-task"
+      status_code       = "200"
+      request_template = <<EOF
+        {
+          "user": {
+            "id": "$context.authorizer.claims.sub",
+            "email": "$context.authorizer.claims.email"
+          },
+          "pathParams": {
+            "id": "$input.params('id')"
+          }
+        }
+        EOF
     },
     {
-      name        = "create-task"
-      path        = "tasks"
-      method      = "POST"
-      lambda      = "create-task"
-      status_code = "201"
+      name              = "create-task"
+      path              = "tasks"
+      method            = "POST"
+      lambda            = "create-task"
+      status_code       = "201"
+      request_template = <<EOF
+        {
+          "body": $input.json('$'),
+          "user": {
+            "id": "$context.authorizer.claims.sub",
+            "email": "$context.authorizer.claims.email"
+          }
+        }
+        EOF
     }
   ]
 }

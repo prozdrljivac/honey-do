@@ -40,9 +40,13 @@ type Task struct {
 	CreatedAt string `json:"createdAt"`
 }
 
+type UserBody struct {
+    Id    string `json:"id"`
+    Email string `json:"email"`
+}
+
 type ListTasksRequest struct {
-	UserId string   `json:"userId"`
-	Email  string   `json:"email"`
+    User UserBody `json:"user"`
 }
 
 type ListTasksResponse struct {
@@ -51,7 +55,7 @@ type ListTasksResponse struct {
 }
 
 func handler(ctx context.Context, req ListTasksRequest) (ListTasksResponse, error) {
-	userID := req.UserId
+	userID := req.User.Id
 
 	tasks, err := getTasksForUser(ctx, userID)
 	if err != nil {

@@ -106,13 +106,7 @@ resource "aws_api_gateway_integration" "integration" {
   uri                     = aws_lambda_function.lambda[each.key].invoke_arn
 
   request_templates = {
-    "application/json" = <<EOF
-    {
-      "body": $input.json('$'),
-      "userId": "$context.authorizer.claims.sub",
-      "email": "$context.authorizer.claims.email"
-    }
-    EOF
+    "application/json" = each.value.request_template 
   }
 }
 

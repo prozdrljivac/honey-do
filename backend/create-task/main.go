@@ -31,10 +31,14 @@ type TaskBody struct {
 	CreatedBy string `json:"createdBy"`
 }
 
+type UserBody struct {
+	Id string `json:id`
+	Email string `json:emal`
+}
+
 type CreateTaskRequest struct {
 	Body   TaskBody `json:"body"`
-	UserId string   `json:"userId"`
-	Email  string   `json:"email"`
+	User   UserBody `json:"user"`
 }
 
 type CreateTaskResponse struct {
@@ -48,7 +52,7 @@ func handler(ctx context.Context, req CreateTaskRequest) (CreateTaskResponse, er
 		return CreateTaskResponse{Error: err.Error()}, nil
 	}
 
-	userID := req.UserId
+	userID := req.User.Id
 	taskID := uuid.New().String()
 
 	if err := createTask(ctx, userID, taskID, req.Body); err != nil {
