@@ -2,8 +2,35 @@ package main
 
 import (
 	"context"
+	"log"
+	"os"
+
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
+
+var dynamoClient *dynamodb.Client
+
+func init() {
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		log.Fatalf("unable to load SDK config: %v", err)
+	}
+	dynamoClient = dynamodb.NewFromConfig(cfg)
+}
+
+type TaskItem struct {
+	PK        string `dynamodbav:"PK"`
+	SK        string `dynamodbav:"SK"`
+	Name      string `dynamodbav:"name"`
+	Status    string `dynamodbav:"status"`
+	CreatedBy string `dynamodbav:"createdBy"`
+	CreatedAt string `dynamodbav:"createdAt"`
+}
 
 type Task struct {
 	ID        string `json:"taskId"`
@@ -33,19 +60,48 @@ type DetailTaskResponse struct {
 }
 
 func handler(ctx context.Context, req DetailTaskRequest) (DetailTaskResponse, error) {
-	// Pull id from params
-	// Check if there is a task with the id provided in the param, if not return 404
-	// Is there a need of mapping from domain to dto obj?
-	// Return the response with a correct type
+	taskId := req.PathParams.Id
+	task, err := getTask(ctx, taskId)
+	if err != nil {
+		return DetailTaskResponse{
+			Error: "Task does not exist",
+		}, nil
+	}
+
 	return DetailTaskResponse {
-		Task: Task{
-			ID: "test",
-			Name: "test",
-			Status: "test",
-			CreatedBy: "test",
-			CreatedAt: "test",
-		},
+		Task: *task,
 	}, nil
+}
+
+func getTask(ctx context.Context, id string) (*Task, error) {
+	task, err := dynamoClient.GetItem(ctx, &dynamodb.GetItemInput{
+		Key: map[string]types.AttributeValue{
+			"SK": &types.AttributeValueMemberS{Value: "TASK#" + id},
+		},
+		TableName: aws.String(os.Getenv("TASK_TABLE_NAME")),	
+	})
+	
+	if err != nil {
+		return nil, err
+	}
+
+
+	var taskItem TaskItem
+	if err := attributevalue.UnmarshalMap(task.Item, &taskItem); err != nil {
+		return nil, err
+	}
+
+	return toTask(taskItem), nil
+}
+
+func toTask(taskItem TaskItem) *Task {
+	return &Task {
+		ID: taskItem.PK,
+		Name: taskItem.Name,
+		Status: taskItem.Status,
+		CreatedBy: taskItem.CreatedBy,
+		CreatedAt: taskItem.CreatedAt,
+	}
 }
 
 func main() {

@@ -13,7 +13,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
-var dynamoClient *dynamodb.Client
+var (
+	dynamoClient *dynamodb.Client
+	tableName    string
+)
 
 func init() {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
@@ -21,6 +24,11 @@ func init() {
 		log.Fatalf("unable to load SDK config: %v", err)
 	}
 	dynamoClient = dynamodb.NewFromConfig(cfg)
+
+	tableName = os.Getenv("TASK_TABLE_NAME")
+	if tableName == "" {
+		log.Fatal("TASK_TABLE_NAME env var is required")
+	}
 }
 
 type TaskItem struct {
@@ -41,72 +49,72 @@ type Task struct {
 }
 
 type UserBody struct {
-    Id    string `json:"id"`
-    Email string `json:"email"`
+	Id    string `json:"id"`
+	Email string `json:"email"`
 }
 
-type ListTasksRequest struct {
-    User UserBody `json:"user"`
+type PathParamsBody struct {
+	Id string `json:"id"`
 }
 
-type ListTasksResponse struct {
-	Tasks []Task `json:"tasks,omitempty"`
+type DetailTaskRequest struct {
+	User       UserBody       `json:"user"`
+	PathParams PathParamsBody `json:"pathParams"`
+}
+
+type DetailTaskResponse struct {
+	Task  *Task  `json:"task,omitempty"`
 	Error string `json:"error,omitempty"`
 }
 
-func handler(ctx context.Context, req ListTasksRequest) (ListTasksResponse, error) {
-	userID := req.User.Id
-
-	tasks, err := getTasksForUser(ctx, userID)
-	if err != nil {
-		log.Printf("failed to list tasks: %v", err)
-		return ListTasksResponse{Error: "Failed to list tasks"}, nil
+func handler(ctx context.Context, req DetailTaskRequest) (DetailTaskResponse, error) {
+	if req.PathParams.Id == "" {
+		return DetailTaskResponse{Error: "task id is required"}, nil
 	}
 
-	return ListTasksResponse{Tasks: tasks}, nil
+	task, err := getTask(ctx, req.User.Id, req.PathParams.Id)
+	if err != nil {
+		return DetailTaskResponse{Error: "internal error"}, nil
+	}
+	if task == nil {
+		return DetailTaskResponse{Error: "task not found"}, nil
+	}
+
+	return DetailTaskResponse{Task: task}, nil
 }
 
-func getTasksForUser(ctx context.Context, userID string) ([]Task, error) {
-	result, err := dynamoClient.Query(ctx, &dynamodb.QueryInput{
-		TableName:              aws.String(os.Getenv("TASK_TABLE_NAME")),
-		KeyConditionExpression: aws.String("PK = :pk AND begins_with(SK, :sk)"),
-		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":pk": &types.AttributeValueMemberS{Value: "USER#" + userID},
-			":sk": &types.AttributeValueMemberS{Value: "TASK#"},
+func getTask(ctx context.Context, userId, taskId string) (*Task, error) {
+	result, err := dynamoClient.GetItem(ctx, &dynamodb.GetItemInput{
+		Key: map[string]types.AttributeValue{
+			"PK": &types.AttributeValueMemberS{Value: "USER#" + userId},
+			"SK": &types.AttributeValueMemberS{Value: "TASK#" + taskId},
 		},
+		TableName: aws.String(tableName),
 	})
 	if err != nil {
 		return nil, err
 	}
+	if result.Item == nil {
+		return nil, nil
+	}
 
-	var items []TaskItem
-	if err := attributevalue.UnmarshalListOfMaps(result.Items, &items); err != nil {
+	var taskItem TaskItem
+	if err := attributevalue.UnmarshalMap(result.Item, &taskItem); err != nil {
 		return nil, err
 	}
 
-	return toTasks(items), nil
+	t := toTask(taskItem)
+	return &t, nil
 }
 
-func toTasks(items []TaskItem) []Task {
-	tasks := make([]Task, len(items))
-	for i, item := range items {
-		tasks[i] = Task{
-			ID:        extractTaskID(item.SK),
-			Name:      item.Name,
-			Status:    item.Status,
-			CreatedBy: item.CreatedBy,
-			CreatedAt: item.CreatedAt,
-		}
+func toTask(taskItem TaskItem) Task {
+	return Task{
+		ID:        taskItem.PK,
+		Name:      taskItem.Name,
+		Status:    taskItem.Status,
+		CreatedBy: taskItem.CreatedBy,
+		CreatedAt: taskItem.CreatedAt,
 	}
-	return tasks
-}
-
-func extractTaskID(sk string) string {
-	// SK format: "TASK#<id>"
-	if len(sk) > 5 {
-		return sk[5:]
-	}
-	return sk
 }
 
 func main() {
