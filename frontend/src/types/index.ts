@@ -21,6 +21,12 @@ export interface Task {
   createdAt: string; // ISO 8601 (RFC 3339)
 }
 
+/** Shape returned by GET /tasks/:id */
+export interface DetailTaskResponse {
+  task?: Task;
+  error?: string;
+}
+
 /** Shape returned by GET /tasks */
 export interface ListTasksResponse {
   tasks?: Task[];

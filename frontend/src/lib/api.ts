@@ -1,4 +1,4 @@
-import type { CreateTaskBody, CreateTaskResponse, ListTasksResponse, Task } from '../types';
+import type { CreateTaskBody, CreateTaskResponse, DetailTaskResponse, ListTasksResponse, Task } from '../types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -35,6 +35,8 @@ export const api = {
       idToken,
     ),
 
-  getTask: (id: string, idToken: string) =>
-    request<Task>(`/tasks/${id}`, { method: 'GET' }, idToken),
+  getTask: async (id: string, idToken: string): Promise<Task | undefined> => {
+    const res = await request<DetailTaskResponse>(`/tasks/${id}`, { method: 'GET' }, idToken);
+    return res.task;
+  },
 };
