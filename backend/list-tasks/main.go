@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -53,63 +54,52 @@ type UserBody struct {
 	Email string `json:"email"`
 }
 
-type PathParamsBody struct {
-	Id string `json:"id"`
+type ListTasksRequest struct {
+	User UserBody `json:"user"`
 }
 
-type DetailTaskRequest struct {
-	User       UserBody       `json:"user"`
-	PathParams PathParamsBody `json:"pathParams"`
-}
-
-type DetailTaskResponse struct {
-	Task  *Task  `json:"task,omitempty"`
+type ListTasksResponse struct {
+	Tasks []Task `json:"tasks,omitempty"`
 	Error string `json:"error,omitempty"`
 }
 
-func handler(ctx context.Context, req DetailTaskRequest) (DetailTaskResponse, error) {
-	if req.PathParams.Id == "" {
-		return DetailTaskResponse{Error: "task id is required"}, nil
-	}
-
-	task, err := getTask(ctx, req.User.Id, req.PathParams.Id)
+func handler(ctx context.Context, req ListTasksRequest) (ListTasksResponse, error) {
+	tasks, err := getTasks(ctx, req.User.Id)
 	if err != nil {
-		return DetailTaskResponse{Error: "internal error"}, nil
-	}
-	if task == nil {
-		return DetailTaskResponse{Error: "task not found"}, nil
+		return ListTasksResponse{Error: "internal error"}, nil
 	}
 
-	return DetailTaskResponse{Task: task}, nil
+	return ListTasksResponse{Tasks: tasks}, nil
 }
 
-func getTask(ctx context.Context, userId, taskId string) (*Task, error) {
-	result, err := dynamoClient.GetItem(ctx, &dynamodb.GetItemInput{
-		Key: map[string]types.AttributeValue{
-			"PK": &types.AttributeValueMemberS{Value: "USER#" + userId},
-			"SK": &types.AttributeValueMemberS{Value: "TASK#" + taskId},
+func getTasks(ctx context.Context, userId string) ([]Task, error) {
+	result, err := dynamoClient.Query(ctx, &dynamodb.QueryInput{
+		TableName:              aws.String(tableName),
+		KeyConditionExpression: aws.String("PK = :pk AND begins_with(SK, :sk)"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":pk": &types.AttributeValueMemberS{Value: "USER#" + userId},
+			":sk": &types.AttributeValueMemberS{Value: "TASK#"},
 		},
-		TableName: aws.String(tableName),
 	})
 	if err != nil {
 		return nil, err
 	}
-	if result.Item == nil {
-		return nil, nil
+
+	var tasks []Task
+	for _, item := range result.Items {
+		var taskItem TaskItem
+		if err := attributevalue.UnmarshalMap(item, &taskItem); err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, toTask(taskItem))
 	}
 
-	var taskItem TaskItem
-	if err := attributevalue.UnmarshalMap(result.Item, &taskItem); err != nil {
-		return nil, err
-	}
-
-	t := toTask(taskItem)
-	return &t, nil
+	return tasks, nil
 }
 
 func toTask(taskItem TaskItem) Task {
 	return Task{
-		ID:        taskItem.PK,
+		ID:        strings.TrimPrefix(taskItem.SK, "TASK#"),
 		Name:      taskItem.Name,
 		Status:    taskItem.Status,
 		CreatedBy: taskItem.CreatedBy,

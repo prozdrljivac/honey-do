@@ -34,11 +34,11 @@ module "honey_do_api" {
 
   routes = [
     {
-      name              = "list-tasks"
-      path              = "tasks"
-      method            = "GET"
-      lambda            = "list-tasks"
-      status_code       = "200"
+      name             = "list-tasks"
+      path             = "tasks"
+      method           = "GET"
+      lambda           = "list-tasks"
+      status_code      = "200"
       request_template = <<EOF
         {
           "user": {
@@ -49,11 +49,11 @@ module "honey_do_api" {
         EOF
     },
     {
-      name              = "detail-task"
-      path              = "tasks/{id}"
-      method            = "GET"
-      lambda            = "detail-task"
-      status_code       = "200"
+      name             = "detail-task"
+      path             = "tasks/{id}"
+      method           = "GET"
+      lambda           = "detail-task"
+      status_code      = "200"
       request_template = <<EOF
         {
           "user": {
@@ -67,11 +67,11 @@ module "honey_do_api" {
         EOF
     },
     {
-      name              = "create-task"
-      path              = "tasks"
-      method            = "POST"
-      lambda            = "create-task"
-      status_code       = "201"
+      name             = "create-task"
+      path             = "tasks"
+      method           = "POST"
+      lambda           = "create-task"
+      status_code      = "201"
       request_template = <<EOF
         {
           "body": $input.json('$'),
